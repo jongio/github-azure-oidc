@@ -8,7 +8,7 @@ on:
 
 permissions:
   id-token: write
-  content: read
+  contents: read
     
 jobs: 
   build-and-deploy:
