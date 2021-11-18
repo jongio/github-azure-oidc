@@ -48,41 +48,42 @@ TENANT_ID=$(az account show --query tenantId -o tsv)
 echo "TENANT_ID: $TENANT_ID"
 
 echo "Configuring application..."
+
 #  First check if an app with the same name exists, if so use it, if not create one
-APP_ID=$(az ad app list --display-name ${APP_NAME} --query "[?displayName=='${APP_NAME}']".appId -o tsv)
+APP_ID=$(az ad app list --filter "displayName eq '$APP_NAME'" --query [].appId -o tsv)
 
 if [[ -z "$APP_ID" ]]; then
     echo "Creating AD app..."
     APP_ID=$(az ad app create --display-name ${APP_NAME} --query appId -o tsv)
-    sleep 15s
+    echo "Sleeping for 30 seconds to give time for the APP to be created."
+    sleep 30s
 else
     echo "Existing AD app found."
 fi
 
 echo "APP_ID: $APP_ID"
 
-echo "Getting AD App objectId, which is the same as the service principals appId..."
-
-APP_OBJECT_ID=$(az ad app show --id $APP_ID --query objectId -o tsv)
-echo "APP_OBJECT_ID: $APP_OBJECT_ID"
-
 echo "Configuring Service Principal..."
 
-SP_OBJECT_ID=$(az ad sp show --id $APP_ID --query appId -o tsv || true)
-if [[ -z "$SP_OBJECT_ID" ]]; then
+echo "First checking if the Service Principal already exists..."
+SP_ID=$(az ad sp list --filter "appId eq '$APP_ID'" --query objectId -o tsv)
+if [[ -z "$SP_ID" ]]; then
     echo "Creating service principal..."
-    SP_OBJECT_ID=$(az ad sp create --id $APP_ID --query objectId -o tsv)
+    SP_ID=$(az ad sp create --id $APP_ID --query objectId -o tsv)
 
     echo "Sleeping for 30 seconds to give time for the SP to be created."
     sleep 30s
 
     echo "Creating role assignment..."
-    az role assignment create --role contributor --subscription $SUB_ID --assignee-object-id $SP_OBJECT_ID --assignee-principal-type ServicePrincipal
+    az role assignment create --role contributor --subscription $SUB_ID --assignee-object-id $SP_ID --assignee-principal-type ServicePrincipal
 else
     echo "Existing Service Principal found."
 fi
 
-echo "SP_OBJECT_ID: $SP_OBJECT_ID"
+echo "SP_ID: $SP_ID"
+
+APP_OBJECT_ID=$(az ad app show --id $APP_ID --query objectId -o tsv)
+echo "APP_OBJECT_ID: $APP_OBJECT_ID"
 
 echo "Creating federatedIdentityCredentials..."
 az rest --method POST --uri "https://graph.microsoft.com/beta/applications/${APP_OBJECT_ID}/federatedIdentityCredentials" --body "{'name':'prfic','issuer':'https://token.actions.githubusercontent.com','subject':'repo:${REPO}:pull_request','description':'pr','audiences':['api://AzureADTokenExchange']}"

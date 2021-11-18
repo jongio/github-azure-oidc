@@ -1,8 +1,10 @@
 # Connect to Azure from a GitHub Action with OpenID Connect (OIDC)
 
-GitHub recently released support to connect to Azure from a GitHub Action using Open ID Connect.
+GitHub recently released support to connect to Azure from a GitHub Action using Open ID Connect. This is helpful for when your GitHub action needs to perform operations on your Azure resources.  Like provisioning resources, deploying codes, etc.
 
-This is helpful for when your GitHub action needs to perform operations on your Azure resources.  Like provisioning resources, deploying codes, etc.
+In the past, you may have used `az ad sp create-for-rbac --sdk-auth` and stuffed that in a GitHub secret called `AZURE_CREDENTIALS` and used the `azure/login` action to authenticate with Azure. The downside to that approach is that you have to store the Service Principal password in the secret and when that changes or expires you have to update the GitHub secret with the new value.
+
+With OIDC, you still use Azure AD and Service Principals, but you don't store the Service Principals password in the GitHub secret, you only store the clientId, tenantId, and subscriptionId and then when the GitHub workflow runs it will request a token from Azure AD using Federated Identity Credentials.
 
 The official docs can be found here:
 - Azure: https://docs.microsoft.com/en-us/azure/developer/github/connect-from-azure
@@ -10,9 +12,36 @@ The official docs can be found here:
 
 The docs get you close to having everything working, but it leaves a lot to be desired from a scripting perspective.  They have some sample Azure CLI commands, but they do not work as-is.  I have created a slew of issues to help get the docs update, but in the meantime - I hope this repo helps you get it all setup.
 
-I created a script in this repo to help you get it setup.  
 
-You can find it here: `./oidc.sh`.
+## How GitHub -> Azure OpenID Connect Works...in a nutshell
+
+1. Azure AD Application
+1. Azure Service Principal with Contributor access to Azure Subscription
+1. Federated Identity Credentials (FIC) assigned to Azure AD Application
+1. GitHub Workflow that:
+    - Sets appropriate `permission` requirements
+    - Uses the [`azure/login`](https://github.com/marketplace/actions/azure-login) Action to authenticate with Azure
+1. GitHub Secrets that contain:
+    - Azure AD Application ID (`AZURE_CLIENT_ID`)
+    - Azure Tenant ID (`AZURE_TENANT_ID`)
+    - Azure Subscription ID (`AZURE_SUBSCRIPTION_ID`)
+
+
+When your GitHub Workflow is run it will use the `azure/login` Action and the GitHub Secrets to request an OIDC token from Azure AD.
+
+## Azure Setup
+
+You have two choices for provisioning and configuring these resources:
+
+### Azure Portal
+
+If you need to do it once or what to simply try it out, then use the Azure Portal instructions found here: https://docs.microsoft.com/en-us/azure/developer/github/connect-from-azure
+
+### Azure CLI
+
+If you want to automate to repeat the setup and config, then Azure CLI is the way to go.  Unfortunetly, the docs today don't get you all the way there, so I created a script in this repo to help you get it setup. The team is working on fixing that experience, so look at this is a stop gap to help you get going.
+
+You can find the script here: `./oidc.sh`.
 
 It accepts two parameters:
  - APP_NAME - This is the name of the Azure AD app to be created.
@@ -25,7 +54,7 @@ It will:
 1. Create Federated Identity Credentials for both `pull-request` and `main` branch.  You can easily add more, just copy and paste one of the lines and update the JSON payload.  The Graph and Azure CLI teams are working on a better experience for this.
 1. Set `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID` secrets in your GitHub repo.
 
-# Setup
+# oidc.sh Script Setup
 
 You can either open up the included DevContainer or run it locally.  
 
