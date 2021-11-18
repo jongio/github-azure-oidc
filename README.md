@@ -29,6 +29,8 @@ The docs get you close to having everything working, but it leaves a lot to be d
 
 When your GitHub Workflow is run it will use the `azure/login` Action and the GitHub Secrets to request an OIDC token from Azure AD.
 
+!["Architecture"](assets/arch.png)
+
 ## Azure Setup
 
 You have two choices for provisioning and configuring these resources:
