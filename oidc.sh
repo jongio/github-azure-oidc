@@ -54,6 +54,7 @@ APP_ID=$(az ad app list --display-name ${APP_NAME} --query "[?displayName=='${AP
 if [[ -z "$APP_ID" ]]; then
     echo "Creating AD app..."
     APP_ID=$(az ad app create --display-name ${APP_NAME} --query appId -o tsv)
+    sleep 15s
 else
     echo "Existing AD app found."
 fi
@@ -84,7 +85,7 @@ fi
 echo "SP_OBJECT_ID: $SP_OBJECT_ID"
 
 echo "Creating federatedIdentityCredentials..."
-az rest --method POST --uri "https://graph.microsoft.com/beta/applications/${APP_OBJECT_ID}/federatedIdentityCredentials" --body "{'name':'prfic','issuer':'https://token.actions.githubusercontent.com','subject':'repo:${REPO}:pull-request','description':'pr','audiences':['api://AzureADTokenExchange']}"
+az rest --method POST --uri "https://graph.microsoft.com/beta/applications/${APP_OBJECT_ID}/federatedIdentityCredentials" --body "{'name':'prfic','issuer':'https://token.actions.githubusercontent.com','subject':'repo:${REPO}:pull_request','description':'pr','audiences':['api://AzureADTokenExchange']}"
 az rest --method POST --uri "https://graph.microsoft.com/beta/applications/${APP_OBJECT_ID}/federatedIdentityCredentials" --body "{'name':'mainfic','issuer':'https://token.actions.githubusercontent.com','subject':'repo:${REPO}:ref:refs/heads/main','description':'main','audiences':['api://AzureADTokenExchange']}"
 # To get an Azure AD app FICs
 #az rest --method GET --uri "https://graph.microsoft.com/beta/applications/${APP_OBJECT_ID}/federatedIdentityCredentials"
