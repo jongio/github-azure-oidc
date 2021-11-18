@@ -6,9 +6,38 @@ set -euo pipefail
 
 # ./oidc.sh {APP_NAME} {ORG|USER/REPO}
 # ./oidc.sh appname1 jongio/ghazoidctest1
+IS_CODESPACE=${CODESPACES:-"false"}
+if $IS_CODESPACE == "true"; then
+    echo "This script doesn't work in GitHub Codespaces.  See this issue for updates. https://github.com/Azure/login/issues/177"
+    exit 0
+fi
 
 APP_NAME=$1
 REPO=$2
+
+echo "Checking Azure CLI login status..."
+EXPIRED_TOKEN=$(az ad signed-in-user show --query 'objectId' -o tsv || true)
+
+if [[ -z "$EXPIRED_TOKEN" ]]; then
+    az login -o none
+fi
+
+ACCOUNT=$(az account show --query '[id,name]')
+echo $ACCOUNT
+
+read -r -p "Do you want to use the above subscription? (Y/n) " response
+response=${response:-Y}
+case "$response" in
+    [yY][eE][sS]|[yY]) 
+        ;;
+    *)
+        echo "Use the \`az account set\` command to set the subscription you'd like to use and re-run this script."
+        exit 0
+        ;;
+esac
+
+echo "Logging into GitHub CLI..."
+gh auth login
 
 echo "Getting Subscription Id..."
 SUB_ID=$(az account show --query id -o tsv)
@@ -43,7 +72,7 @@ if [[ -z "$SP_OBJECT_ID" ]]; then
     echo "Creating service principal..."
     SP_OBJECT_ID=$(az ad sp create --id $APP_ID --query objectId -o tsv)
 
-    echo "Sleeping to give time for the SP to be created."
+    echo "Sleeping for 30 seconds to give time for the SP to be created."
     sleep 30s
 
     echo "Creating role assignment..."
@@ -57,6 +86,12 @@ echo "SP_OBJECT_ID: $SP_OBJECT_ID"
 echo "Creating federatedIdentityCredentials..."
 az rest --method POST --uri "https://graph.microsoft.com/beta/applications/${APP_OBJECT_ID}/federatedIdentityCredentials" --body "{'name':'prfic','issuer':'https://token.actions.githubusercontent.com','subject':'repo:${REPO}:pull-request','description':'pr','audiences':['api://AzureADTokenExchange']}"
 az rest --method POST --uri "https://graph.microsoft.com/beta/applications/${APP_OBJECT_ID}/federatedIdentityCredentials" --body "{'name':'mainfic','issuer':'https://token.actions.githubusercontent.com','subject':'repo:${REPO}:ref:refs/heads/main','description':'main','audiences':['api://AzureADTokenExchange']}"
+# To get an Azure AD app FICs
+#az rest --method GET --uri "https://graph.microsoft.com/beta/applications/${APP_OBJECT_ID}/federatedIdentityCredentials"
+# To delete an Azure AD app FIC
+#az rest --method DELETE --uri "https://graph.microsoft.com/beta/applications/${APP_OBJECT_ID}/federatedIdentityCredentials/${FIC_ID}"
+# You can also delete FICs here: 
+# https://ms.portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/Credentials/appId/${APP_ID}/isMSAApp/
 
 echo "Creating the following GitHub repo secrets..."
 echo AZURE_CLIENT_ID=$APP_ID
