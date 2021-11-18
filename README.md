@@ -91,4 +91,4 @@ I hacked this script together in a couple of hours, so it's not perfect. Let me 
 Check out the workflow file in this repo `.github/workflows/ci.yml` for an example.  You can use that as a starting point for your GitHub action.
 
 # Follow ups
-I hoping that this functionality gets integrated into the Azure or GitHub CLI, but in the meantime, this should help you out.
+I hope that this functionality gets integrated into the Azure or GitHub CLI, but in the meantime, this should help you out.
