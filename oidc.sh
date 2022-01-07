@@ -5,7 +5,7 @@ set -euo pipefail
 # Install GitHub CLI - https://cli.github.com/
 # Install JQ - https://stedolan.github.io/jq/download/
 
-# ./oidc.sh {APP_NAME} {ORG|USER/REPO} {fics.json}
+# ./oidc.sh {APP_NAME} {ORG|USER/REPO} {FICS_FILE}
 # ./oidc.sh ghazoidc1 jongio/ghazoidctest ./fics.json
 IS_CODESPACE=${CODESPACES:-"false"}
 if $IS_CODESPACE == "true"; then
