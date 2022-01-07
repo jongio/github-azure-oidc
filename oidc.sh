@@ -1,11 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
-# Install Azure CLI
-# Install GitHub CLI
+# Install Azure CLI- https://docs.microsoft.com/en-us/cli/azure/install-azure-cli
+# Install GitHub CLI - https://cli.github.com/
+# Install JQ - https://stedolan.github.io/jq/download/
 
-# ./oidc.sh {APP_NAME} {ORG|USER/REPO}
-# ./oidc.sh appname1 jongio/ghazoidctest1
+# ./oidc.sh {APP_NAME} {ORG|USER/REPO} {fics.json}
+# ./oidc.sh ghazoidc1 jongio/ghazoidctest ./fics.json
 IS_CODESPACE=${CODESPACES:-"false"}
 if $IS_CODESPACE == "true"; then
     echo "This script doesn't work in GitHub Codespaces.  See this issue for updates. https://github.com/Azure/login/issues/177"
@@ -13,7 +14,8 @@ if $IS_CODESPACE == "true"; then
 fi
 
 APP_NAME=$1
-REPO=$2
+export REPO=$2
+FICS_FILE=$3
 
 echo "Checking Azure CLI login status..."
 EXPIRED_TOKEN=$(az ad signed-in-user show --query 'objectId' -o tsv || true)
@@ -76,6 +78,7 @@ if [[ -z "$SP_ID" ]]; then
 
     echo "Creating role assignment..."
     az role assignment create --role contributor --subscription $SUB_ID --assignee-object-id $SP_ID --assignee-principal-type ServicePrincipal
+    sleep 30s
 else
     echo "Existing Service Principal found."
 fi
@@ -86,8 +89,20 @@ APP_OBJECT_ID=$(az ad app show --id $APP_ID --query objectId -o tsv)
 echo "APP_OBJECT_ID: $APP_OBJECT_ID"
 
 echo "Creating federatedIdentityCredentials..."
-az rest --method POST --uri "https://graph.microsoft.com/beta/applications/${APP_OBJECT_ID}/federatedIdentityCredentials" --body "{'name':'prfic','issuer':'https://token.actions.githubusercontent.com','subject':'repo:${REPO}:pull_request','description':'pr','audiences':['api://AzureADTokenExchange']}"
-az rest --method POST --uri "https://graph.microsoft.com/beta/applications/${APP_OBJECT_ID}/federatedIdentityCredentials" --body "{'name':'mainfic','issuer':'https://token.actions.githubusercontent.com','subject':'repo:${REPO}:ref:refs/heads/main','description':'main','audiences':['api://AzureADTokenExchange']}"
+for FIC in $(envsubst < $FICS_FILE | jq -c '.[]'); do
+    SUBJECT=$(jq -r '.subject' <<< "$FIC")
+    ALL_FICS=$(az rest --method GET --uri "https://graph.microsoft.com/beta/applications/${APP_OBJECT_ID}/federatedIdentityCredentials")
+    SUBJECT_FIC=$(jq -r --arg SUBJECT "$SUBJECT" '.value[] | select(.subject==$SUBJECT)' <<< "${ALL_FICS}")
+    if [ -z "$SUBJECT_FIC" ]; then
+        echo "Creating FIC with subject '${SUBJECT}'."
+        az rest --method POST --uri "https://graph.microsoft.com/beta/applications/${APP_OBJECT_ID}/federatedIdentityCredentials" --body ${FIC}
+        # Adding a sleep here seems to help the FICs get created.
+        sleep 10s
+    else 
+        echo "FIC with subject '${SUBJECT}' already exists. Skipping..."
+    fi
+done
+
 # To get an Azure AD app FICs
 #az rest --method GET --uri "https://graph.microsoft.com/beta/applications/${APP_OBJECT_ID}/federatedIdentityCredentials"
 # To delete an Azure AD app FIC

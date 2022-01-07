@@ -1,0 +1,29 @@
+[
+    {
+        "name": "prfic",
+        "issuer": "https://token.actions.githubusercontent.com",
+        "subject": "repo:${REPO}:pull_request",
+        "description": "pr",
+        "audiences": [
+            "api://AzureADTokenExchange"
+        ]
+    },
+    {
+        "name": "mainfic",
+        "issuer": "https://token.actions.githubusercontent.com",
+        "subject": "repo:${REPO}:ref:refs/heads/main",
+        "description": "main",
+        "audiences": [
+            "api://AzureADTokenExchange"
+        ]
+    },
+    {
+        "name": "masterfic",
+        "issuer": "https://token.actions.githubusercontent.com",
+        "subject": "repo:${REPO}:ref:refs/heads/master",
+        "description": "master",
+        "audiences": [
+            "api://AzureADTokenExchange"
+        ]
+    }
+]
