@@ -41,11 +41,11 @@ If you need to do it once or what to simply try it out, then use the Azure Porta
 
 ### Azure CLI
 
-If you want to automate to repeat the setup and config, then Azure CLI is the way to go.  Unfortunetly, the docs today don't get you all the way there, so I created a script in this repo to help you get it setup. The team is working on fixing that experience, so look at this is a stop gap to help you get going.
+If you want to automate to repeat the setup and config, then Azure CLI is the way to go.  Unfortunately, the docs today don't get you all the way there, so I created a script in this repo to help you get it set up. The team is working on fixing that experience, so look at this as a stop gap to help you get going.
 
 You can find the script here: `./oidc.sh`.
 
-It accepts two parameters:
+It accepts three parameters:
  - APP_NAME - This is the name of the Azure AD app to be created.
  - REPO - This is the repo where you want to setup OIDC.
  - FICS_FILE - This is a path to the file that contains the Federated Identity Credential definitions that you want to create.
