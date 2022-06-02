@@ -19,7 +19,7 @@ export REPO=$2
 FICS_FILE=$3
 
 echo "Checking Azure CLI login status..."
-EXPIRED_TOKEN=$(az ad signed-in-user show --query 'objectId' -o tsv || true)
+EXPIRED_TOKEN=$(az ad signed-in-user show --query 'id' -o tsv || true)
 
 if [[ -z "$EXPIRED_TOKEN" ]]
 then
@@ -35,7 +35,7 @@ case "$response" in
     [yY][eE][sS]|[yY]) 
         ;;
     *)
-        echo "Use the \`az account set\` command to set the subscription you'd like to use and re-run this script."
+        echo "Use the \`az account set -s\` command to set the subscription you'd like to use and re-run this script."
         exit 0
         ;;
 esac
@@ -71,11 +71,11 @@ echo "APP_ID: $APP_ID"
 echo "Configuring Service Principal..."
 
 echo "First checking if the Service Principal already exists..."
-SP_ID=$(az ad sp list --filter "appId eq '$APP_ID'" --query [].objectId -o tsv)
+SP_ID=$(az ad sp list --filter "appId eq '$APP_ID'" --query [].id -o tsv)
 if [[ -z "$SP_ID" ]]
 then
     echo "Creating service principal..."
-    SP_ID=$(az ad sp create --id $APP_ID --query objectId -o tsv)
+    SP_ID=$(az ad sp create --id $APP_ID --query id -o tsv)
 
     echo "Sleeping for 30 seconds to give time for the SP to be created."
     sleep 30s
@@ -89,7 +89,7 @@ fi
 
 echo "SP_ID: $SP_ID"
 
-APP_OBJECT_ID=$(az ad app show --id $APP_ID --query objectId -o tsv)
+APP_OBJECT_ID=$(az ad app show --id $APP_ID --query id -o tsv)
 echo "APP_OBJECT_ID: $APP_OBJECT_ID"
 
 
