@@ -70,7 +70,7 @@ echo "APP_ID: $APP_ID"
 echo "Configuring Service Principal..."
 
 echo "First checking if the Service Principal already exists..."
-SP_ID=$(az ad sp list --filter "appId eq '$APP_ID'" --query [].objectId -o tsv)
+SP_ID=$(az ad sp list --filter "appId eq '$APP_ID'" --query [].id -o tsv)
 if [[ -z "$SP_ID" ]]
 then
     echo "Creating service principal..."
